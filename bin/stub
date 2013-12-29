@@ -2,9 +2,11 @@
 
 import json
 from socket import socket as skt, AF_INET, SOCK_STREAM, SHUT_RDWR, error as skterr
+import re
 import sys
 
 BUFFER_SIZE = 4096
+HEADERS = "rig port pool worker gpu status Mh/s gpu% fan fan% temp reject% hwerrs memspd gpuspd int".split()
 
 
 class Miner:
@@ -50,18 +52,16 @@ class Miner:
 
 def device_line(line_tuple):
     """Format tuple of device data for the console, guided by HEADERS."""
-    return '%-15s %5s %3s %-4s %-6s %4s %5s %4s %4s %6s %6s %6s %6s %3s' % line_tuple
-
-HEADERS = "host port gpu Mh/s status load fan fan% temp rej% hwerrs memspd gpuspd int".split()
+    return '%-15s %-5s %-25s %-12s %-3s %-6s %-4s %4s %5s %4s %4s %7s %6s %6s %6s %3s' % line_tuple
 
 
-def device_tuple(host, port, device_dict):
+def device_tuple(host, port, pool_dict, device_dict):
     """Extract the tuple for printing to console."""
-    line_parts = [host, port]
+    line_parts = [host, port, pool_dict['pool'], pool_dict['worker']]
     fields = [
             'GPU',
-            'MHS 5s',
             'Status',
+            'MHS 5s',
             'GPU Activity',
             'Fan Speed',
             'Fan Percent',
@@ -77,38 +77,44 @@ def device_tuple(host, port, device_dict):
     return tuple(line_parts)
 
 
+def pool_info(pools_response):
+    """Extract key meta info from 'pools' response.""" 
+    info = {}
+    primary_pool = pools_response['POOLS'][0]
+    url = re.match('.*://(.*)', primary_pool['URL'])
+    info['pool'] = url.group(1) if url else None
+    info['worker'] = primary_pool['User']
+    return info
+
+
 def run():
 
-    host = '192.168.121.20'
-    port = 4028
-#    requests = ['summary', 'devs', 'pools']
-#    requests = ['devs']
-
-    miner = Miner(host, port)
-
-#    for req in requests:
-#        resp = miner.request(req)
-#        print '%s:\n%s\n%s\n' % (req, '-' * 50, resp)
-
-#    gpu = miner.request('gpu', 0)
-#    print '%s:\n%s\n%s\n' % ('gpu0', '-' * 50, gpu)
-# 
-#    for k, v in gpu['GPU'][0].iteritems():
-#        print '%s: %s' % (k, v)
-
-    try:
-        device_response = miner.request('devs')
-        devices = device_response['DEVS']
-    except skterr as err:
-        print '%s:%s not responding' % (host, port)
-        sys.exit(1)
+    miners = [
+            {'host': '192.168.121.20', 'port': 4028},
+            {'host': '192.168.121.22', 'port': 4028},
+    ]
 
     print device_line(tuple(HEADERS))
-    print '-' * 90
+    print '-' * 130
 
-    for dev in devices:
-        line = device_tuple(host, port, dev)
-        print device_line(line)
+    for rig in miners:
+        host, port = (rig['host'], rig['port'])
+        miner = Miner(host, port)
+
+        try:
+            pools_response = miner.request('pools')
+            device_response = miner.request('devs')
+            pool = pool_info(pools_response)
+            devices = device_response['DEVS']
+        except skterr as err:
+            print '%s:%s not responding' % (host, port)
+            sys.exit(1)
+        except KeyboardInterrupt as err:
+            sys.exit(0)
+
+        for dev in devices:
+            line = device_tuple(host, port, pool, dev)
+            print device_line(line)
 
 
 if __name__ == '__main__':
