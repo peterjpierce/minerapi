@@ -52,7 +52,7 @@ class Miner:
 
 def device_line(line_tuple):
     """Format tuple of device data for the console, guided by HEADERS."""
-    return '%-15s %-5s %-25s %-12s %-3s %-6s %-4s %4s %5s %4s %4s %7s %6s %6s %6s %3s' % line_tuple
+    return '%-15s %-5s %-25s %-20s %-3s %-6s %-4s %4s %5s %4s %4s %7s %6s %6s %6s %3s' % line_tuple
 
 
 def device_tuple(host, port, pool_dict, device_dict):
@@ -91,11 +91,13 @@ def run():
 
     miners = [
             {'host': '192.168.121.20', 'port': 4028},
+            {'host': '192.168.121.21', 'port': 4028},
             {'host': '192.168.121.22', 'port': 4028},
+            {'host': '192.168.121.15', 'port': 4028},
     ]
 
     print device_line(tuple(HEADERS))
-    print '-' * 130
+    print '-' * 138
 
     for rig in miners:
         host, port = (rig['host'], rig['port'])
