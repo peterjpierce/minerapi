@@ -1,12 +1,22 @@
 #!/usr/bin/env python
 
+##
+# configure here only
+# ----------------------------------------------
+MINERS = [
+        {'host': '192.168.121.20', 'port': 4028},
+        {'host': '192.168.121.21', 'port': 4028},
+        {'host': '192.168.121.22', 'port': 4028},
+        {'host': '192.168.121.15', 'port': 4028},
+]
+# ----------------------------------------------
+
 import json
 from socket import socket as skt, AF_INET, SOCK_STREAM, SHUT_RDWR, error as skterr
 import re
 import sys
 
 BUFFER_SIZE = 4096
-HEADERS = "rig port pool worker gpu status Mh/s gpu% fan fan% temp reject% hwerrs memspd gpuspd int".split()
 
 
 class Miner:
@@ -50,69 +60,65 @@ class Miner:
         return json.dumps(cmd)
 
 
-class Console:
-    """Format and print output to the console."""
+class Formatter():
+    """Format output for the console."""
 
     def __init__(self):
-        pass
+        self.gpu_format = self._build_gpu_format()
+        self.headings, self.divider = self._build_headings()
 
-    def gpu_line(self, righost, rigport, pooldict, gpudict):
+    def gpu(self, righost, rigport, pooldict, gpudict):
         """Print formatted data for one GPU."""
-        spec = self._format_spec()
         data = {'rig-instance': '%s:%s' % (righost, rigport)}
         for k, v in pooldict.iteritems():
             data[k] = v
         for k, v in gpudict.iteritems():
             data[k] = v
-        return spec.format(**data)
+        return self.gpu_format.format(**data)
 
-    def _format_spec(self):
+    def _build_headings(self):
+        """Construct headings and dividing line."""
+        labels = [
+                '{0:<20}'.format('rig-instance'),
+                '{0:<3}'.format('GPU'),
+                '{0:<6}'.format('status'),
+                '{0:<4}'.format('load'),
+                '{0:<25}'.format('working-in-pool'),
+                '{0:<20}'.format('worker'),
+                '{0:<4}'.format('MH/s'),
+                '{0:<4}'.format('temp'),
+                '{0:>5}'.format('fan'),
+                '{0:^4}'.format('fan%'),
+                '{0:<7}'.format('rejects'),
+                '{0:<5}'.format('hwerr'),
+                '{0:<4}'.format('mspd'),
+                '{0:<4}'.format('gspd'),
+                '{0:<3}'.format('int'),
+        ]
+        row = ' '.join(labels)
+        divider = '-' * len(row)
+        return (row, divider)
+
+    def _build_gpu_format(self):
         """Return format spec for GPU data."""
         format_parts = [
                 '{rig-instance:<20}',
                 '{GPU:^3}',
+                '{Status:<6}',
+                '{GPU Activity:>3}%',
                 '{pool:<25}',
                 '{worker:<20}',
-                '{Status:<6}',
                 '{MHS 5s:4.2f}',
-                '{GPU Activity:>4}%',
+                '{Temperature:3.0f}C',
                 '{Fan Speed:>5}',
-                '{Fan Percent:>4}%',
-                '{Temperature:3.0f}',
-                '{Device Rejected%:> 7.2f}',
-                '{Hardware Errors:>4}',
+                '{Fan Percent:>3}%',
+                '{Device Rejected%:> 6.2f}%',
+                '{Hardware Errors:>5}',
                 '{Memory Clock:>4}',
                 '{GPU Clock:>4}',
                 '{Intensity:>3}',
         ]
         return ' '.join(format_parts)
-
-
-def device_line(line_tuple):
-    """Format tuple of device data for the console, guided by HEADERS."""
-    return '%-15s %-5s %-25s %-20s %-3s %-6s %-4s %4s %5s %4s %4s %7s %6s %6s %6s %3s' % line_tuple
-
-
-def device_tuple(host, port, pool_dict, device_dict):
-    """Extract the tuple for printing to console."""
-    line_parts = [host, port, pool_dict['pool'], pool_dict['worker']]
-    fields = [
-            'GPU',
-            'Status',
-            'MHS 5s',
-            'GPU Activity',
-            'Fan Speed',
-            'Fan Percent',
-            'Temperature',
-            'Device Rejected%',
-            'Hardware Errors',
-            'Memory Clock',
-            'GPU Clock',
-            'Intensity',
-            ]
-    for fld in fields:
-        line_parts.append(device_dict[fld])
-    return tuple(line_parts)
 
 
 def pool_info(pools_response):
@@ -127,27 +133,19 @@ def pool_info(pools_response):
 
 def run():
 
-    console = Console()
+    console = Formatter()
 
-    miners = [
-            {'host': '192.168.121.20', 'port': 4028},
-            {'host': '192.168.121.21', 'port': 4028},
-            {'host': '192.168.121.22', 'port': 4028},
-            {'host': '192.168.121.15', 'port': 4028},
-    ]
+    print console.headings
+    print console.divider
 
-    print device_line(tuple(HEADERS))
-    print '-' * 138
-
-    for rig in miners:
+    for rig in MINERS:
         host, port = (rig['host'], rig['port'])
         miner = Miner(host, port)
 
         try:
-            pools_response = miner.request('pools')
-            device_response = miner.request('devs')
-            pool = pool_info(pools_response)
-            devices = device_response['DEVS']
+            pool = pool_info(
+                    miner.request('pools'))
+            devices = miner.request('devs')['DEVS']
         except skterr as err:
             print '%s:%s not responding' % (host, port)
             sys.exit(1)
@@ -155,8 +153,7 @@ def run():
             sys.exit(0)
 
         for dev in devices:
-#            line = device_tuple(host, port, pool, dev)
-            print console.gpu_line(host, port, pool, dev)
+            print console.gpu(host, port, pool, dev)
 
 
 if __name__ == '__main__':
