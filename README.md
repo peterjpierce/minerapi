@@ -4,7 +4,7 @@ Gather and display statistics for one or more rigs and GPUs that run
 
 ## Installation
 ### Step 1: Enable RPC
-Every instance of cgminer you whish to monitor must be running the RPC API.
+Every instance of cgminer you wish to monitor must be running the RPC API.
 To enable it, append the following to cgminer's command line invocation (or
 the config file / shell script you run):
 
