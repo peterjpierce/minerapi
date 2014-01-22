@@ -222,7 +222,7 @@ def run():
             print console.gpu(host, port, pool, dev)
 
     print console.divider
-    print "Total MH/s across all machines: " % total_mhs
+    print "Total MH/s across all machines: %s" % total_mhs
 
 if __name__ == '__main__':
     run()
