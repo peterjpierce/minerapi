@@ -33,11 +33,13 @@ RIGS = """
 Simply invoke `minerstat` from the command line once you have completed
 the installation steps outlined above.
 
+This has been tested on Linux, FreeBSD and Windows running Python 2.7.
+
 ## Donations
 If you found this utility helpful, please consider donating to the author:
 
-+ BTC: `1AxT6VUuVZrVHAiv6geAd4kgqsEYQGoJAm`
-+ LTC: `Ld2negemWZur6BqJiwoRzWkKzSHfa1f6wg`
-+ GLD: `E8ExQSG25PdDygjGrFWTUGjCfek1nBP7yw`
++ BTC: `1CavTJLrtRXfWJ5MKZH53dudfq9aWa3z6E`
++ LTC: `LhdsXnNjZyMJF8TrvV7y1pSmhyQSs9RyB7`
++ GLD: `E3qqqrLejCXVPjZD9XnabYNXvJ8nDeHymF`
 
 Thank you!
