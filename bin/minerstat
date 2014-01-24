@@ -94,6 +94,10 @@ class Miner:
         worker = primary_pool['User']
         return {'pool': pool, 'worker': worker}
 
+    def devices_info(self):
+        """Statistics for each GPU on this rig."""
+        return self.request('devs')['DEVS']
+
     def request(self, command, arg=None):
         """Send command to miner and return parsed response."""
         response = None
@@ -148,6 +152,10 @@ class Formatter():
             data[k] = v
         return self.gpu_format.format(**data)
 
+    def summary(self, rig_count, rigs_up_count, gpu_count, total_hashrate):
+        return '%d of %d rigs are up with %d GPUs, totaling %.2f MH/s' % (
+                rigs_up_count, rig_count, gpu_count, total_hashrate)
+
     def _build_headings(self):
         """Construct headings and dividing line."""
         labels = [
@@ -197,7 +205,7 @@ def run():
 
     miners = Miners(RIGS)
     console = Formatter()
-    total_mhs = 0
+    rig_count, rigs_up, gpu_count, total_mhs = (0, 0, 0, 0)
 
     print console.headings
     print console.divider
@@ -205,10 +213,11 @@ def run():
     for rig in miners:
         host, port = (rig['host'], rig['port'])
         miner = Miner(host, port)
+        rig_count += 1
 
         try:
             pool = miner.pool_info()
-            devices = miner.request('devs')['DEVS']
+            devices = miner.devices_info()
         except NotRespondingError as err:
             print '%s:%s not responding' % (host, port)
             continue
@@ -216,13 +225,16 @@ def run():
             sys.exit(0)
         except Exception as err:
             raise
+        else:
+            rigs_up += 1
 
         for dev in devices:
+            gpu_count += 1
             total_mhs += float(dev['MHS 5s'])
             print console.gpu(host, port, pool, dev)
 
     print console.divider
-    print "Total MH/s across all machines: %s" % total_mhs
+    print console.summary(rig_count, rigs_up, gpu_count, total_mhs)
 
 if __name__ == '__main__':
     run()
