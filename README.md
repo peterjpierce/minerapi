@@ -33,7 +33,8 @@ RIGS = """
 Simply invoke `minerstat` from the command line once you have completed
 the installation steps outlined above.
 
-This has been tested on Linux, FreeBSD and Windows running Python 2.7.
+This has been tested on Linux, FreeBSD, OSX Mavericks, and Windows running
+Python 2.7 and CGMiner versions 3.5, 3.6, and 3.7.2
 
 ## Donations
 If you found this utility helpful, please consider donating to the author:
