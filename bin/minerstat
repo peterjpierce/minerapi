@@ -108,10 +108,17 @@ class Miner:
             miner.connect(self.endpoint)
             miner.send(self._instruction(command, arg))
             response = self._response(miner)
-            miner.shutdown(SHUT_RDWR)
-            miner.close()
         except (skt_timeout, skt_err) as err:
             raise NotRespondingError(err)
+        except Exception as err:
+            raise
+
+        try:
+            miner.shutdown(SHUT_RDWR)
+            miner.close()
+        except skt_err as err:
+            # This machine runs OSX; sockets are already closed
+            pass
         except Exception as err:
             raise
 
